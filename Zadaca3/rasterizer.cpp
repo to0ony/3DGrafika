@@ -195,6 +195,105 @@ void draw_triangle(TGAImage& image, float x0, float y0, float z0, float x1, floa
     }
 }
 
+// CETVRTI ZADATAK
+
+void draw_triangle_tex(TGAImage& image, float x0, float y0, float z0, float x1, float y1, float z1, float x2, float y2, float z2, float u0, float v0, float u1, float v1, float u2, float v2, const char* path)
+{
+    TGAImage texture;
+    texture.read_tga_file(path);
+
+    x0 /= z0;
+    y0 /= z0;
+    x1 /= z1;
+    y1 /= z1;
+    x2 /= z2;
+    y2 /= z2;
+
+    x0 = (1 + x0) * 0.5 * width;
+    x1 = (1 + x1) * 0.5 * width;
+    x2 = (1 + x2) * 0.5 * width;
+
+    y0 = (1 + y0) * 0.5 * height;
+    y1 = (1 + y1) * 0.5 * height;
+    y2 = (1 + y2) * 0.5 * height;
+
+    float xmin = min(min(floor(x0), floor(x1)), floor(x2));
+    float xmax = max(max(ceil(x0), ceil(x1)), ceil(x2));
+
+    float ymin = min(min(floor(y0), floor(y1)), floor(y2));
+    float ymax = max(max(ceil(y0), ceil(y1)), ceil(y2));
+
+    for (float y = ymin; y <= ymax; ++y) {
+        for (float x = xmin; x <= xmax; ++x) {
+            float alpha = line(x1, y1, x2, y2, x, y) / line(x1, y1, x2, y2, x0, y0);
+            float beta = line(x2, y2, x0, y0, x, y) / line(x2, y2, x0, y0, x1, y1);
+            float gamma = line(x0, y0, x1, y1, x, y) / line(x0, y0, x1, y1, x2, y2);
+
+            if (alpha > 0 && alpha < 1 && beta > 0 && beta < 1 && gamma > 0 && gamma < 1) {
+                int s = round(texture.get_width() * (alpha * u0 + beta * u1 + gamma * u2));
+                int t = round(texture.get_height() * (alpha * v0 + beta * v1 + gamma * v2));
+                set_color(x, y, image, texture.get(s, t));
+            }
+        }
+    }
+}
+
+void draw_triangle_tex_corrected(TGAImage& image, float x0, float y0, float z0, float x1, float y1, float z1, float x2, float y2, float z2, float u0, float v0, float u1, float v1, float u2, float v2, const char* path)
+{
+    TGAImage texture;
+    texture.read_tga_file(path);
+
+    x0 /= z0;
+    y0 /= z0;
+    x1 /= z1;
+    y1 /= z1;
+    x2 /= z2;
+    y2 /= z2;
+
+    x0 = (1 + x0) * 0.5 * width;
+    x1 = (1 + x1) * 0.5 * width;
+    x2 = (1 + x2) * 0.5 * width;
+
+    y0 = (1 + y0) * 0.5 * height;
+    y1 = (1 + y1) * 0.5 * height;
+    y2 = (1 + y2) * 0.5 * height;
+
+    u0 /= z0;
+    u1 /= z1;
+    u2 /= z2;
+
+    v0 /= z0;
+    v1 /= z1;
+    v2 /= z2;
+
+    z0 = 1 / z0;
+    z1 = 1 / z1;
+    z2 = 1 / z2;
+
+    float xmin = min(min(floor(x0), floor(x1)), floor(x2));
+    float xmax = max(max(ceil(x0), ceil(x1)), ceil(x2));
+
+    float ymin = min(min(floor(y0), floor(y1)), floor(y2));
+    float ymax = max(max(ceil(y0), ceil(y1)), ceil(y2));
+
+    for (float y = ymin; y <= ymax; ++y) {
+        for (float x = xmin; x <= xmax; ++x) {
+            float alpha = line(x1, y1, x2, y2, x, y) / line(x1, y1, x2, y2, x0, y0);
+            float beta = line(x2, y2, x0, y0, x, y) / line(x2, y2, x0, y0, x1, y1);
+            float gamma = line(x0, y0, x1, y1, x, y) / line(x0, y0, x1, y1, x2, y2);
+
+            if (alpha > 0 && alpha < 1 && beta > 0 && beta < 1 && gamma > 0 && gamma < 1) {
+                float s = texture.get_width() * (alpha * u0 + beta * u1 + gamma * u2);
+                float t = texture.get_height() * (alpha * v0 + beta * v1 + gamma * v2);
+                float z = 1 / (alpha * z0 + beta * z1 + gamma * z2);
+                s = s * z;
+                t = t * z;
+                set_color(x, y, image, texture.get(round(s), round(t)));
+            }
+        }
+    }
+}
+
 // definirajmo boje
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red   = TGAColor(255, 0, 0, 255);
@@ -207,6 +306,8 @@ int main()
     TGAImage task1(width, height, TGAImage::RGB);
     TGAImage task2(width, height, TGAImage::RGB);
     TGAImage task3(width, height, TGAImage::RGB);
+    TGAImage task4(width, height, TGAImage::RGB);
+    TGAImage task4_1(width,height,TGAImage::RGB);
 
     // Prvi zadatak
     draw_triangle_2d(50, 100, 200, 300, 400, 100, task1, red);
@@ -223,5 +324,14 @@ int main()
     draw_triangle(task3, -48, -10, 82, 29, -15, 44, 13, 34, 114, blue);
     task3.flip_vertically();
     task3.write_tga_file("task3.tga");
+
+    // trokuti s teksturom
+    draw_triangle_tex(task4, -48, -10, 82, 29, -15, 44, 13, 34, 114, 0, 0, 0, 1, 1, 0, "cobble.tga");
+    task4.flip_vertically();
+    task4.write_tga_file("task4a.tga");
+
+    draw_triangle_tex_corrected(task4_1, -48, -10, 82, 29, -15, 44, 13, 34, 114, 0, 0, 0, 1, 1, 0, "cobble.tga");
+    task4_1.flip_vertically();
+    task4_1.write_tga_file("task4b.tga");
     
 }
